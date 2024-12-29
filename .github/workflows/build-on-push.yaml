@@ -80,7 +80,7 @@ jobs:
 
   # This job builds the Godot project for Meta Quest
   build-meta-quest:
-    name: 🐧 Build Meta Quest
+    name: 🤖 Build Meta Quest
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
