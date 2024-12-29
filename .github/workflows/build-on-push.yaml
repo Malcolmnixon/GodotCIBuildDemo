@@ -1,0 +1,133 @@
+# This workflow file build the Godot project for multiple target systems.
+name: Build
+
+on:
+  [push, pull_request]
+  
+env:
+  GODOT_VERSION: 4.3.0
+
+jobs:
+  # This job builds the Godot project for Windows
+  build-windows:
+    name: 🏁 Build Windows
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Godot
+      uses: chickensoft-games/setup-godot@v2
+      with:
+        version: ${{ env.GODOT_VERSION }}
+        use-dotnet: false
+        include-templates: true
+    
+    - name: Godot Import Assets (initial)
+      shell: bash
+      run: |
+        godot --headless --import || exit 0
+
+    - name: Godot Export Windows
+      shell: bash
+      run: >
+        godot
+        --headless
+        --export-release Windows
+
+    - name: Upload Windows
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-windows
+        path: |
+          build/windows/*.*
+          !**/.gitignore
+
+  # This job builds the Godot project for Linux
+  build-linux:
+    name: 🐧 Build Linux
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Godot
+      uses: chickensoft-games/setup-godot@v2
+      with:
+        version: ${{ env.GODOT_VERSION }}
+        use-dotnet: false
+        include-templates: true
+    
+    - name: Godot Import Assets (initial)
+      shell: bash
+      run: |
+        godot --headless --import || exit 0
+
+    - name: Godot Export Linux
+      shell: bash
+      run: >
+        godot
+        --headless
+        --export-release Linux
+
+    - name: Upload Linux
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-linux
+        path: |
+          build/linux/*.*
+          !**/.gitignore
+
+  # This job builds the Godot project for Meta Quest
+  build-meta-quest:
+    name: 🐧 Build Meta Quest
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install Android SDK Packages
+      run: >
+        sdkmanager
+        "platform-tools"
+        "build-tools;34.0.0"
+        "platforms;android-34"
+        "cmdline-tools;latest"
+        "cmake;3.10.2.4988404"
+        "ndk;23.2.8568313"
+
+    - name: Setup Godot
+      uses: chickensoft-games/setup-godot@v2
+      with:
+        version: ${{ env.GODOT_VERSION }}
+        use-dotnet: false
+        include-templates: true
+    
+    - name: Godot Import Assets (initial)
+      shell: bash
+      run: |
+        godot --headless --import || exit 0
+
+    - name: Godot Export Meta Quest
+      shell: bash
+      run: >
+        godot
+        --headless
+        --install-android-build-template
+        --export-debug MetaQuest
+
+    - name: Upload Meta Quest
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-metaquest
+        path: |
+          build/metaquest/*.apk
