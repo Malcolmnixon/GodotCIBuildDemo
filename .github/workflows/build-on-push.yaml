@@ -3,16 +3,17 @@ name: Build
 
 on:
   [push, pull_request]
-  
+
 env:
   GODOT_VERSION: 4.3.0
   OPENXR_VENDORS_VERSION: 3.1.0-stable
 
 jobs:
+  # Matrix-job to create builds
   build:
     name: Building for ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    strategy: 
+    strategy:
       fail-fast: true
       matrix:
         include:
@@ -31,7 +32,7 @@ jobs:
             export-preset: Linux
             export-type: release
             export-folder: build/linux
-          
+
           # Export for Meta Quest
           - name: 🤖 Meta Quest
             os: ubuntu-22.04
@@ -63,7 +64,7 @@ jobs:
       # Check out the repository
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       # Install the OpenXR Vendors Plugin
       - name: Install OpenXR Vendors Plugin
         shell: bash
@@ -82,12 +83,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-  
+
       # If targeting android then install Android SDK
       - name: Setup Android SDK
         if: matrix.platform == 'android'
         uses: android-actions/setup-android@v3
-  
+
       # If targeting android then install Android SDK Packages
       - name: Install Android SDK Packages
         if: matrix.platform == 'android'
@@ -107,7 +108,7 @@ jobs:
           version: ${{ env.GODOT_VERSION }}
           use-dotnet: false
           include-templates: true
-      
+
       # Import Godot Project
       - name: Initial Godot Import
         shell: bash
@@ -123,11 +124,38 @@ jobs:
           ${{ matrix.export-args }}
           --export-${{ matrix.export-type }} ${{ matrix.export-preset }}
 
+      # Compress project
+      - name: Compress project
+        run: |
+          cd ${{ matrix.export-folder }}
+          7z a -tzip ${{ matrix.export-preset }}.zip *.* -x'!.gitignore'
+
       # Upload artifacts
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.export-preset }}-Artifacts
-          path: |
-            ${{ matrix.export-folder }}/*.*
-            !**/.gitignore
+          path: ${{ matrix.export-folder }}/${{ matrix.export-preset }}.zip
+
+  # Job to publish release
+  release:
+    name: Publish Release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-22.04
+    needs: build
+    permissions:
+      contents: write
+
+    steps:
+      # Download artifacts
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v4
+
+      # Publish release
+      - uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifacts: '*-Artifacts/*.zip'
+          omitNameDuringUpdate: true
+          omitBodyDuringUpdate: true
+          token: ${{ secrets.GITHUB_TOKEN }}
