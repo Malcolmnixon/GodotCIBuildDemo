@@ -16,3 +16,19 @@ The following actions are used within the CI workflow:
 ## Video
 
 For further instructions, please watch the [video](https://youtu.be/PjDDakeG4J0).
+
+
+## Notes
+
+This now uses Github matrix-builds and:
+
+- Installs the Godot OpenXR Vendors plugin
+- Installs the Android SDK (for Android targets)
+- Exports for:
+  - Windows
+  - Linux
+  - Meta Quest
+  - Pico
+  - Magic Leap
+
+Additional exports may be added by appending to the matrix rules.
