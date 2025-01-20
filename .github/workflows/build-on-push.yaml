@@ -6,128 +6,128 @@ on:
   
 env:
   GODOT_VERSION: 4.3.0
+  OPENXR_VENDORS_VERSION: 3.1.0-stable
 
 jobs:
-  # This job builds the Godot project for Windows
-  build-windows:
-    name: 🏁 Build Windows
-    runs-on: windows-latest
+  build:
+    name: Building for ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy: 
+      fail-fast: true
+      matrix:
+        include:
+          # Export for Windows
+          - name: 🏁 Windows
+            os: windows-latest
+            platform: windows
+            export-preset: Windows
+            export-type: release
+            export-folder: build/windows
+
+          # Export for Linux
+          - name: 🐧 Linux
+            os: ubuntu-22.04
+            platform: linux
+            export-preset: Linux
+            export-type: release
+            export-folder: build/linux
+          
+          # Export for Meta Quest
+          - name: 🤖 Meta Quest
+            os: ubuntu-22.04
+            platform: android
+            export-preset: MetaQuest
+            export-type: debug
+            export-args: --install-android-build-template
+            export-folder: build/metaquest
+
+          # Export for Pico
+          - name: 🤖 Pico
+            os: ubuntu-22.04
+            platform: android
+            export-preset: Pico
+            export-type: debug
+            export-args: --install-android-build-template
+            export-folder: build/pico
+
+          # Export for Magic Leap
+          - name: 🤖 Magic Leap
+            os: ubuntu-22.04
+            platform: android
+            export-preset: MagicLeap
+            export-type: debug
+            export-args: --install-android-build-template
+            export-folder: build/magicleap
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      # Check out the repository
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      # Install the OpenXR Vendors Plugin
+      - name: Install OpenXR Vendors Plugin
+        shell: bash
+        run: |
+          curl -L -O https://github.com/GodotVR/godot_openxr_vendors/releases/download/${{ env.OPENXR_VENDORS_VERSION }}/godotopenxrvendorsaddon.zip
+          unzip -o godotopenxrvendorsaddon.zip -d godotopenxrvendorsaddon
+          mkdir addons
+          mv godotopenxrvendorsaddon/asset/addons/godotopenxrvendors addons/godotopenxrvendors
+          rm godotopenxrvendorsaddon.zip
+          rm -rf godotopenxrvendorsaddon
 
-    - name: Setup Godot
-      uses: chickensoft-games/setup-godot@v2
-      with:
-        version: ${{ env.GODOT_VERSION }}
-        use-dotnet: false
-        include-templates: true
-    
-    - name: Godot Import Assets (initial)
-      shell: bash
-      run: |
-        godot --headless --import || exit 0
+      # If targeting android then install JDK
+      - name: Set up JDK 17
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+  
+      # If targeting android then install Android SDK
+      - name: Setup Android SDK
+        if: matrix.platform == 'android'
+        uses: android-actions/setup-android@v3
+  
+      # If targeting android then install Android SDK Packages
+      - name: Install Android SDK Packages
+        if: matrix.platform == 'android'
+        run: >
+          sdkmanager
+          "platform-tools"
+          "build-tools;34.0.0"
+          "platforms;android-34"
+          "cmdline-tools;latest"
+          "cmake;3.10.2.4988404"
+          "ndk;23.2.8568313"
 
-    - name: Godot Export Windows
-      shell: bash
-      run: >
-        godot
-        --headless
-        --export-release Windows
+      # Setup Godot
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+      
+      # Import Godot Project
+      - name: Initial Godot Import
+        shell: bash
+        run: |
+          godot --headless --import || exit 0
 
-    - name: Upload Windows
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-windows
-        path: |
-          build/windows/*.*
-          !**/.gitignore
+      # Export project
+      - name: Export Godot Project
+        shell: bash
+        run: >
+          godot
+          --headless
+          ${{ matrix.export-args }}
+          --export-${{ matrix.export-type }} ${{ matrix.export-preset }}
 
-  # This job builds the Godot project for Linux
-  build-linux:
-    name: 🐧 Build Linux
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup Godot
-      uses: chickensoft-games/setup-godot@v2
-      with:
-        version: ${{ env.GODOT_VERSION }}
-        use-dotnet: false
-        include-templates: true
-    
-    - name: Godot Import Assets (initial)
-      shell: bash
-      run: |
-        godot --headless --import || exit 0
-
-    - name: Godot Export Linux
-      shell: bash
-      run: >
-        godot
-        --headless
-        --export-release Linux
-
-    - name: Upload Linux
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-linux
-        path: |
-          build/linux/*.*
-          !**/.gitignore
-
-  # This job builds the Godot project for Meta Quest
-  build-meta-quest:
-    name: 🤖 Build Meta Quest
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Install Android SDK Packages
-      run: >
-        sdkmanager
-        "platform-tools"
-        "build-tools;34.0.0"
-        "platforms;android-34"
-        "cmdline-tools;latest"
-        "cmake;3.10.2.4988404"
-        "ndk;23.2.8568313"
-
-    - name: Setup Godot
-      uses: chickensoft-games/setup-godot@v2
-      with:
-        version: ${{ env.GODOT_VERSION }}
-        use-dotnet: false
-        include-templates: true
-    
-    - name: Godot Import Assets (initial)
-      shell: bash
-      run: |
-        godot --headless --import || exit 0
-
-    - name: Godot Export Meta Quest
-      shell: bash
-      run: >
-        godot
-        --headless
-        --install-android-build-template
-        --export-debug MetaQuest
-
-    - name: Upload Meta Quest
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-metaquest
-        path: |
-          build/metaquest/*.apk
+      # Upload artifacts
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.export-preset }}-Artifacts
+          path: |
+            ${{ matrix.export-folder }}/*.*
+            !**/.gitignore
