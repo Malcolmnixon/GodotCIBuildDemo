@@ -1,23 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://conll6q8h2o1l"]
 
-[sub_resource type="GDScript" id="GDScript_kpg5k"]
-script/source = "extends Node3D
-
-var xr_interface: XRInterface
-
-func _ready():
-	xr_interface = XRServer.find_interface(\"OpenXR\")
-	if xr_interface and xr_interface.is_initialized():
-		print(\"OpenXR initialized successfully\")
-
-		# Turn off v-sync!
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-
-		# Change our main viewport to output to the HMD
-		get_viewport().use_xr = true
-	else:
-		print(\"OpenXR not initialized, please check if your headset is connected\")
-"
+[ext_resource type="PackedScene" uid="uid://bm7iv0a7s63dc" path="res://start_xr.tscn" id="1_kaaya"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r1hn3"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
@@ -38,7 +21,6 @@ size = Vector3(0.1, 0.1, 0.1)
 size = Vector3(0.1, 0.1, 0.1)
 
 [node name="Main" type="Node3D"]
-script = SubResource("GDScript_kpg5k")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_bp8ld")
@@ -67,3 +49,5 @@ pose = &"aim"
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="XROrigin3D/RightController3D"]
 mesh = SubResource("BoxMesh_2tjn8")
+
+[node name="StartXR" parent="." instance=ExtResource("1_kaaya")]

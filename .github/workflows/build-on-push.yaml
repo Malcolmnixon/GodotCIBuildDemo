@@ -60,6 +60,14 @@ jobs:
             export-args: --install-android-build-template
             export-folder: build/magicleap
 
+          # Export for WebXR
+          - name: 🌐 WebXR
+            os: ubuntu-22.04
+            platform: web
+            export-preset: WebXR
+            export-type: release
+            export-folder: build/webxr
+
     steps:
       # Check out the repository
       - name: Checkout
