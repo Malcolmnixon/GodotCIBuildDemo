@@ -30,6 +30,7 @@ This now uses Github matrix-builds and:
   - Meta Quest
   - Pico
   - Magic Leap
+  - WebXR
 - Publish Artifacts (if making Github Release)
 
 Additional exports may be added by appending to the matrix rules.
