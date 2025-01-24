@@ -1,18 +1,33 @@
 # This workflow file build the Godot project for multiple target systems.
+---
+
+
+# Build workflow
 name: Build
 
+
+# Trigger rules (adjust to configure when CI is performed)
 on:
   [push, pull_request]
 
+
+# Environment variables
 env:
+  # Configure Godot version
   GODOT_VERSION: 4.3.0
+  
+  # OpenXR Vendors version
   OPENXR_VENDORS_VERSION: 3.1.0-stable
 
+
+# CI jobs
 jobs:
-  # Matrix-job to create builds
+  # Build job (Matrix build for all exports)
   build:
     name: Building for ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: true
       matrix:
@@ -24,6 +39,7 @@ jobs:
             export-preset: Windows
             export-type: release
             export-folder: build/windows
+            archive: Windows
 
           # Export for Linux
           - name: 🐧 Linux
@@ -32,42 +48,57 @@ jobs:
             export-preset: Linux
             export-type: release
             export-folder: build/linux
+            archive: Linux
 
-          # Export for Meta Quest
-          - name: 🤖 Meta Quest
+          # Export for Android Quest
+          - name: 🤖 Android Quest
             os: ubuntu-22.04
             platform: android
-            export-preset: MetaQuest
+            export-preset: Android Quest
             export-type: debug
             export-args: --install-android-build-template
-            export-folder: build/metaquest
+            export-folder: build/android-quest
+            archive: Android-Quest
 
-          # Export for Pico
-          - name: 🤖 Pico
+          # Export for Android Pico
+          - name: 🤖 Android Pico
             os: ubuntu-22.04
             platform: android
-            export-preset: Pico
+            export-preset: Android Pico
             export-type: debug
             export-args: --install-android-build-template
-            export-folder: build/pico
+            export-folder: build/android-pico
+            archive: Android-Pico
 
-          # Export for Magic Leap
-          - name: 🤖 Magic Leap
+          # Export for Android Magic Leap
+          - name: 🤖 Android Magic Leap
             os: ubuntu-22.04
             platform: android
-            export-preset: MagicLeap
+            export-preset: Android Magic Leap
             export-type: debug
             export-args: --install-android-build-template
-            export-folder: build/magicleap
+            export-folder: build/android-magicleap
+            archive: Android-MagicLeap
 
-          # Export for Vive
-          - name: 🤖 Vive
+          # Export for Android Vive
+          - name: 🤖 Android Vive
             os: ubuntu-22.04
             platform: android
-            export-preset: Vive
+            export-preset: Android Vive
             export-type: debug
             export-args: --install-android-build-template
-            export-folder: build/vive
+            export-folder: build/android-vive
+            archive: Android-Vive
+
+          # Export for Android Lynx
+          - name: 🤖 Android Lynx
+            os: ubuntu-22.04
+            platform: android
+            export-preset: Android Lynx
+            export-type: debug
+            export-args: --install-android-build-template
+            export-folder: build/android-lynx
+            archive: Android-Lynx
 
           # Export for WebXR
           - name: 🌐 WebXR
@@ -76,6 +107,7 @@ jobs:
             export-preset: WebXR
             export-type: release
             export-folder: build/webxr
+            archive: WebXR
 
     steps:
       # Check out the repository
@@ -139,40 +171,29 @@ jobs:
           godot
           --headless
           ${{ matrix.export-args }}
-          --export-${{ matrix.export-type }} ${{ matrix.export-preset }}
-
-      # Compress project
-      - name: Compress project
-        run: |
-          cd ${{ matrix.export-folder }}
-          7z a -tzip ${{ matrix.export-preset }}.zip *.* -x'!.gitignore'
+          --export-${{ matrix.export-type }} "${{ matrix.export-preset }}"
 
       # Upload artifacts
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.export-preset }}-Artifacts
-          path: ${{ matrix.export-folder }}/${{ matrix.export-preset }}.zip
+          name: ${{ matrix.archive }}-Artifacts
+          path: |
+            ${{ matrix.export-folder }}/*.*
+            !**/.gitignore          
 
-  # Job to publish release
-  release:
-    name: Publish Release
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    runs-on: ubuntu-22.04
-    needs: build
-    permissions:
-      contents: write
-
-    steps:
-      # Download artifacts
-      - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v4
+      # Compress project
+      - name: Compress project
+        run: |
+          cd ${{ matrix.export-folder }}
+          7z a -tzip ${{ matrix.archive }}.zip *.* -x'!.gitignore'
 
       # Publish release
       - uses: ncipollo/release-action@v1
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         with:
           allowUpdates: true
-          artifacts: '*-Artifacts/*.zip'
+          artifacts: '${{ matrix.export-folder }}/${{ matrix.archive }}.zip'
           omitNameDuringUpdate: true
           omitBodyDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
