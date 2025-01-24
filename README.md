@@ -27,9 +27,11 @@ This now uses Github matrix-builds and:
 - Exports for:
   - Windows
   - Linux
-  - Meta Quest
-  - Pico
-  - Magic Leap
+  - Android Quest
+  - Android Pico
+  - Android Magic Leap
+  - Android Vive
+  - Android Lynx
   - WebXR
 - Publish Artifacts (if making Github Release)
 
