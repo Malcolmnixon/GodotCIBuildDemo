@@ -11,6 +11,7 @@ The following actions are used within the CI workflow:
 - [actions/setup-java](https://github.com/actions/setup-java)
 - [android-actions/setup-android](https://github.com/android-actions/setup-android)
 - [chickensoft-games/setup-godot](https://github.com/chickensoft-games/setup-godot)
+- [remarkablegames/setup-butler](https://github.com/remarkablegames/setup-butler)
 
 
 ## Video
@@ -33,6 +34,7 @@ This now uses Github matrix-builds and:
   - Android Vive
   - Android Lynx
   - WebXR
-- Publish Artifacts (if making Github Release)
+- Publish Artifacts (if making Release)
+- Push to itch.io (if making Release)
 
 Additional exports may be added by appending to the matrix rules.

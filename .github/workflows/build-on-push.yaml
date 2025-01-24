@@ -15,9 +15,15 @@ on:
 env:
   # Configure Godot version
   GODOT_VERSION: 4.3.0
-  
+
   # OpenXR Vendors version
   OPENXR_VENDORS_VERSION: 3.1.0-stable
+  
+  # Butler API Key (comment to disable)
+  BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+  
+  # Butler User/Game (set to itch.io user/game)
+  BUTLER_USER_GAME: malcolmnixon/godotcibuilddemo
 
 
 # CI jobs
@@ -40,6 +46,7 @@ jobs:
             export-type: release
             export-folder: build/windows
             archive: Windows
+            butler-channel: windows
 
           # Export for Linux
           - name: 🐧 Linux
@@ -49,6 +56,7 @@ jobs:
             export-type: release
             export-folder: build/linux
             archive: Linux
+            butler-channel: linux
 
           # Export for Android Quest
           - name: 🤖 Android Quest
@@ -59,6 +67,7 @@ jobs:
             export-args: --install-android-build-template
             export-folder: build/android-quest
             archive: Android-Quest
+            butler-channel: android-quest
 
           # Export for Android Pico
           - name: 🤖 Android Pico
@@ -69,6 +78,7 @@ jobs:
             export-args: --install-android-build-template
             export-folder: build/android-pico
             archive: Android-Pico
+            butler-channel: android-pico
 
           # Export for Android Magic Leap
           - name: 🤖 Android Magic Leap
@@ -79,6 +89,7 @@ jobs:
             export-args: --install-android-build-template
             export-folder: build/android-magicleap
             archive: Android-MagicLeap
+            butler-channel: android-magicleap
 
           # Export for Android Vive
           - name: 🤖 Android Vive
@@ -89,6 +100,7 @@ jobs:
             export-args: --install-android-build-template
             export-folder: build/android-vive
             archive: Android-Vive
+            butler-channel: android-vive
 
           # Export for Android Lynx
           - name: 🤖 Android Lynx
@@ -99,6 +111,7 @@ jobs:
             export-args: --install-android-build-template
             export-folder: build/android-lynx
             archive: Android-Lynx
+            butler-channel: android-lynx
 
           # Export for WebXR
           - name: 🌐 WebXR
@@ -108,6 +121,7 @@ jobs:
             export-type: release
             export-folder: build/webxr
             archive: WebXR
+            butler-channel: webxr
 
     steps:
       # Check out the repository
@@ -180,17 +194,46 @@ jobs:
           name: ${{ matrix.archive }}-Artifacts
           path: |
             ${{ matrix.export-folder }}/*.*
-            !**/.gitignore          
+            !**/.gitignore
 
-      # Compress project
-      - name: Compress project
+      # Install butler (if building release with butler support)
+      - name: Install Butler
+        if: >
+          github.event_name == 'push' && 
+          github.ref_type == 'tag' &&
+          env.BUTLER_API_KEY != ''
+        uses: remarkablegames/setup-butler@v1
+        with:
+          butler-version: LATEST
+
+      # Push to itch.io (if building release)
+      - name: Push to itch.io
+        if: >
+          github.event_name == 'push' && 
+          github.ref_type == 'tag' &&
+          env.BUTLER_API_KEY != ''
+        run: >
+          butler push
+          --ignore '.gitignore'
+          ${{ matrix.export-folder }}
+          ${{ env.BUTLER_USER_GAME }}:${{ matrix.butler-channel }}
+          --userversion ${{ github.ref_name }}
+
+      # Compress project (if building release)
+      - name: Compress Project
+        if: >
+          github.event_name == 'push' && 
+          github.ref_type == 'tag'
         run: |
           cd ${{ matrix.export-folder }}
           7z a -tzip ${{ matrix.archive }}.zip *.* -x'!.gitignore'
 
-      # Publish release
-      - uses: ncipollo/release-action@v1
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      # Publish release (if building release)
+      - name: Publish Release
+        uses: ncipollo/release-action@v1
+        if: >
+          github.event_name == 'push' && 
+          github.ref_type == 'tag'
         with:
           allowUpdates: true
           artifacts: '${{ matrix.export-folder }}/${{ matrix.archive }}.zip'
