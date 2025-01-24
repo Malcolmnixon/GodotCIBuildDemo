@@ -60,6 +60,15 @@ jobs:
             export-args: --install-android-build-template
             export-folder: build/magicleap
 
+          # Export for Vive
+          - name: 🤖 Vive
+            os: ubuntu-22.04
+            platform: android
+            export-preset: Vive
+            export-type: debug
+            export-args: --install-android-build-template
+            export-folder: build/vive
+
           # Export for WebXR
           - name: 🌐 WebXR
             os: ubuntu-22.04
